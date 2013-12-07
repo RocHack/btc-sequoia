@@ -16,7 +16,19 @@ exports.accountLookup = function(req, res) {
 	var prefix = universityIDPrefixes[university] || "";
 	var campusId = "" + prefix + studentId;
 
-	console.log('using campus id', campusId);
+	if (!(university in universityIDPrefixes)) {
+		error = "Unknown university";
+		done();
+		return;
+	}
+
+	if (university == "rochester" && studentId.length != 8) {
+		error = "Invalid Student ID";
+		done();
+		return;
+	}
+
+	console.log('campus id', campusId, 'university', university);
 
 	var error, email, fullName,
 		waiting = 2;
@@ -37,7 +49,6 @@ exports.accountLookup = function(req, res) {
 				error = body.d.ResponseText;
 			} else {
 				email = body.d;
-				console.log('got email', email, body.d);
 			}
 		} else {
 			error = err || true;
@@ -52,7 +63,6 @@ exports.accountLookup = function(req, res) {
 	}, function (err, response, body) {
 		if (!error && body) {
 			fullName = body.d.FullName;
-			console.log('got fullname', fullName, body);
 		} else {
 			error = err;
 		}
