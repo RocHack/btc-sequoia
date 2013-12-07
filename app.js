@@ -28,12 +28,11 @@ if ('development' == app.get('env')) {
 	app.use(express.errorHandler());
 }
 
-//app.get('/', routes.index);
 app.get('/api/account_lookup', api.accountLookup);
+app.get('/api/create_button', api.createButton);
+app.get('/api/button_callback', api.buttonCallback);
 
 http.createServer(app).listen(app.get('port'), function(){
-	console.log('Express server listening on port ' + app.get('port'));
+	console.log('btc-sequoia server listening on port ' + app.get('port'));
 });
 
-var config = require("./config.json");
-var coinbase = require("coinbase-api")(config.api_key);

@@ -1,4 +1,9 @@
 var request = require("request");
+var config = require("../config.json");
+var coinbase = require("coinbase-api")(config.api_key);
+
+var baseUrl = config.base_url;
+var apiBase = baseUrl + "api/";
 
 var ecardHost = "https://ecard.sequoiars.com/";
 var base = ecardHost + "eCardServices/eCardServices.svc/WebHttp/";
@@ -89,4 +94,46 @@ exports.accountLookup = function(req, res) {
 			email: email
 		});
 	}
+};
+
+exports.createButton = function(req, res) {
+	var amount = req.query.amount;
+	var fund = req.query.fund;
+	var fundName = req.query.fund_name;
+	var fullName = req.query.full_name;
+	var studentId = req.query.student_id;
+	var university = req.query.university;
+	var description = fundName + " for " + fullName;
+	var id = university + "_" + studentId + "_" + fund;
+
+	coinbase.buttons({
+		"button": {
+			"name": fundName,
+			"type": "buy_now",
+			"price_string": amount,
+			"price_currency_iso": "USD",
+			"custom": id,
+			"callback_url": apiBase + "button_callback",
+			"description": description,
+			"style": "custom_large"
+		}
+
+	}, function(err, json) {
+		if (err || !json.button) {
+			console.err(err);
+			res.json({});
+			return;
+		}
+		res.json({
+			button: {
+				code: json.button.code
+			}
+		});
+	});
+
+};
+
+exports.buttonCallback = function (req, res) {
+	console.log(req);
+	res.json({ok: true});
 };

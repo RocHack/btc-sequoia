@@ -28,7 +28,7 @@
 				</p>
 			</div>
 			<div id="lookup-fail" class="hidden">
-				<p>Unable to lookup</p>
+				<p>Unable to lookup.</p>
 				<p id="lookup-fail-text"></p>
 			</div>
 		</form>
@@ -37,12 +37,27 @@
 				Name: <ins id="name"></ins><br>
 				Email: <ins id="email"></ins>
 			</p>
-			<p>
+			<p id="confirm-ask">
 				Is this you?
 				<button type="submit">Yes</button>
 				<button type="reset">No</button>
 			</p>
 		</form>
+		<form id="amount-choice" class="hidden">
+			<p>
+				Account:
+				<select id="fund-choice">
+					<option value="1">Declining</option>
+					<option value="2">URos</option>
+				</select><br>
+				Amount: $ <input id="fund-amount">
+			</p>
+			<p><button type="submit">Checkout</button></p>
+		<form>
+
+		<div id="coinbase-button" class="coinbase-button"
+			data-code=""></div>
+
 		<script>init()</script>
 	</body>
 </html>
