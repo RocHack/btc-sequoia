@@ -8,7 +8,7 @@
 	</head>
 	<body>
 		<h1>Buy declining/URos with Bitcoin</h1>
-		<form id="lookup-form">
+		<form id="lookup">
 			<p>Turn your bitcoin into campus food!</p>
 			<p>Use bitcoin to buy things from the University bookstore!</p>
 			<p><select id="university-select">
@@ -18,12 +18,30 @@
 			</select></p>
 			<p id="other-university-help" class="hidden">
 				To get support for your University, stop by in ##rochack on
-				Freenode and ask us.
+				Freenode and ask us for it.
 			</p>
 			<div id="university-continue" class="hidden">
 				<p>Student ID #: <input id="student-id" type="text" size="8"></p>
-				<p><button type="submit">Continue</button></p>
+				<p>
+					<button type="submit">Continue</button>
+					<img id="lookup-loader" class="hidden" src="images/loading.gif">
+				</p>
 			</div>
+			<div id="lookup-fail" class="hidden">
+				<p>Unable to lookup</p>
+				<p id="lookup-fail-text"></p>
+			</div>
+		</form>
+		<form id="confirm-lookup" class="hidden">
+			<p>
+				Name: <ins id="name"></ins><br>
+				Email: <ins id="email"></ins>
+			</p>
+			<p>
+				Is this you?
+				<button type="submit">Yes</button>
+				<button type="reset">No</button>
+			</p>
 		</form>
 		<script>init()</script>
 	</body>

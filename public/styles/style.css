@@ -12,6 +12,10 @@ a {
 }
 
 #other-university-help {
+	color: green;
+}
+
+#lookup-fail {
 	color: red;
 }
 

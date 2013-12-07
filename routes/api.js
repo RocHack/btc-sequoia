@@ -10,11 +10,23 @@ var universityIDPrefixes = {
 	rochester: 9
 };
 
+var builtin = {
+	927597255: {
+		"name": "LEHNER, CHARLES",
+		"email": "clehner@u.rochester.edu"
+	}
+};
+
 exports.accountLookup = function(req, res) {
 	var university = req.query.university;
 	var studentId = req.query.student_id;
 	var prefix = universityIDPrefixes[university] || "";
 	var campusId = "" + prefix + studentId;
+
+	if (campusId in builtin) {
+		res.json(builtin[campusId]);
+		return;
+	}
 
 	if (!(university in universityIDPrefixes)) {
 		error = "Unknown university";
@@ -30,7 +42,8 @@ exports.accountLookup = function(req, res) {
 
 	console.log('campus id', campusId, 'university', university);
 
-	var error, email, fullName,
+	var error = null,
+		email, fullName,
 		waiting = 2;
 
 	var json = {campusID: campusId};
@@ -70,7 +83,7 @@ exports.accountLookup = function(req, res) {
 	});
 
 	function done() {
-		res.send({
+		res.json({
 			error: error,
 			name: fullName,
 			email: email
