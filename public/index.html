@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>BTC-Sequoia</title>
+		<link rel="stylesheet" href="styles/style.css">
+		<script src="scripts/main.js"></script>
+	</head>
+	<body>
+		<h1>Buy declining/URos with Bitcoin</h1>
+		<form id="lookup-form">
+			<p>Turn your bitcoin into campus food!</p>
+			<p>Use bitcoin to buy things from the University bookstore!</p>
+			<p><select id="university-select">
+				<option value="">Select your university&hellip;</option>
+				<option value="rochester">University of Rochester</option>
+				<option value="other">Other&hellip;</option>
+			</select></p>
+			<p id="other-university-help" class="hidden">
+				To get support for your University, stop by in ##rochack on
+				Freenode and ask us.
+			</p>
+			<div id="university-continue" class="hidden">
+				<p>Student ID #: <input id="student-id" type="text" size="8"></p>
+				<p><button type="submit">Continue</button></p>
+			</div>
+		</form>
+		<script>init()</script>
+	</body>
+</html>
