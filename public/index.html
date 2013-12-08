@@ -17,7 +17,7 @@
 				<option value="other">Other&hellip;</option>
 			</select></p>
 			<p id="other-university-help" class="hidden">
-				To get support for your University, stop by in ##rochack on
+				To get support for your university, stop by in ##rochack on
 				Freenode and ask us for it.
 			</p>
 			<div id="university-continue" class="hidden">
@@ -52,12 +52,13 @@
 				</select><br>
 				Amount: $ <input id="fund-amount">
 			</p>
-			<p><button type="submit">Checkout</button></p>
+			<p>
+				<button type="submit">Checkout</button>
+				<img id="checkout-loader" class="hidden" src="images/loading.gif">
+			</p>
 		<form>
 
-		<div id="coinbase-button" class="coinbase-button"
-			data-code=""></div>
-
 		<script>init()</script>
+		<script src="scripts/coinbase-button.js"></script>
 	</body>
 </html>

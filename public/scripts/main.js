@@ -21,7 +21,7 @@ var univSelect, otherUnivHelp, lookupForm, studentIdInput, lookupLoader,
 	univContinue, confirmLookupForm, lookupFailEl, lookupFailText,
 	nameInput, emailInput,
 	amountChoiceForm, fundSelect, amountInput,
-	coinbaseButton;
+	checkoutLoader;
 
 function $(id) {
 	return document.getElementById(id);
@@ -86,7 +86,17 @@ function onAmountChoiceSubmit(e) {
 	createCheckoutButton(fund, fundName, amount);
 }
 
+var buttons = {};
+
 function createCheckoutButton(fund, fundName, amount) {
+	var btnId = "" + fund + "_" + (+amount);
+	var code = buttons[btnId];
+	if (code) {
+		// If we have already created a button for this amount/fund, use it
+		showCheckout(code);
+		return;
+	}
+
 	var studentId = studentIdInput.value;
 	var university = univSelect.value;
 	var fullName = nameInput.innerText;
@@ -96,21 +106,29 @@ function createCheckoutButton(fund, fundName, amount) {
 		"&fund_name=" + encodeURIComponent(fundName) +
 		"&full_name=" + encodeURIComponent(fullName) +
 		"&amount=" + encodeURIComponent(amount);
+	showHide(checkoutLoader, true);
 	ajax("api/create_button?" + q, function (resp) {
 		var btn = resp.button;
 		if (!btn) {
 			console.log(resp);
 			throw new Error("Error getting button.");
 		}
-		addButton(btn);
+		code = btn.code;
+		buttons[btnId] = code;
+		addCheckout(btn);
+		setTimeout(function () {
+			showHide(checkoutLoader, false);
+			showCheckout(code);
+		}, 1500);
 	});
 }
 
-function addButton(btn) {
-	coinbaseButton.setAttribute("data-code", btn.code);
-	var script = document.createElement("script");
-	script.src = "https://coinbase.com/assets/button.js";
-	document.body.appendChild(script);
+function addCheckout(btn) {
+	window.coinbaseButtonify(btn);
+}
+
+function showCheckout(btnCode) {
+	window.coinbaseShowModal(btnCode);
 }
 
 function init() {
@@ -138,11 +156,5 @@ function init() {
 	amountInput = $("fund-amount");
 	amountChoiceForm.addEventListener("submit", onAmountChoiceSubmit, false);
 
-	coinbaseButton = $("coinbase-button");
-
-	// dev
-	studentIdInput.value = "27597255";
-	univSelect.value = "rochester";
-	onUnivSelectChange.call(univSelect);
-	studentIdInput.focus();
+	checkoutLoader = $("checkout-loader");
 }
