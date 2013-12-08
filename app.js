@@ -30,7 +30,7 @@ if ('development' == app.get('env')) {
 
 app.get('/api/account_lookup', api.accountLookup);
 app.get('/api/create_button', api.createButton);
-app.get('/api/button_callback', api.buttonCallback);
+app.post('/api/button_callback', api.buttonCallback);
 
 http.createServer(app).listen(app.get('port'), function(){
 	console.log('btc-sequoia server listening on port ' + app.get('port'));

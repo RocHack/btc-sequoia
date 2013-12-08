@@ -1,4 +1,5 @@
 var request = require("request");
+var crypto = require('crypto');
 var config = require("../config.json");
 var coinbase = require("coinbase-api")(config.api_key);
 
@@ -15,21 +16,18 @@ var universityIDPrefixes = {
 	rochester: 9
 };
 
-var builtin = {
-	927597255: {
-		"name": "LEHNER, CHARLES",
-		"email": "clehner@u.rochester.edu"
-	}
-};
+var cache = {};
 
-exports.accountLookup = function(req, res) {
-	var university = req.query.university;
-	var studentId = req.query.student_id;
+function hmac(str, key) {
+	return crypto.createHmac("SHA256", key).update(str).digest("base64");
+}
+
+function lookupAccount(university, studentId, cb) {
 	var prefix = universityIDPrefixes[university] || "";
 	var campusId = "" + prefix + studentId;
 
-	if (campusId in builtin) {
-		res.json(builtin[campusId]);
+	if (campusId in cache) {
+		cb(cache[campusId]);
 		return;
 	}
 
@@ -88,12 +86,23 @@ exports.accountLookup = function(req, res) {
 	});
 
 	function done() {
-		res.json({
+		var result = {
 			error: error,
 			name: fullName,
-			email: email
-		});
+			email: email,
+			campusID: campusId
+		};
+		cache[campusId] = result;
+		cb(result);
 	}
+}
+
+exports.accountLookup = function(req, res) {
+	var university = req.query.university;
+	var studentId = req.query.student_id;
+	lookupAccount(university, studentId, function (stuff) {
+		res.json(stuff);
+	});
 };
 
 exports.createButton = function(req, res) {
@@ -104,7 +113,8 @@ exports.createButton = function(req, res) {
 	var studentId = req.query.student_id;
 	var university = req.query.university;
 	var description = fundName + " for " + fullName;
-	var id = university + "_" + studentId + "_" + fund;
+	var id = university + "_" + studentId + "_" + fund + "_" + fundName;
+	id = id + "_" + hmac(id, config.secret);
 
 	coinbase.buttons({
 		"button": {
@@ -124,9 +134,11 @@ exports.createButton = function(req, res) {
 			res.json({});
 			return;
 		}
+		var code = json.button.code;
+		console.log('Generated button with code', code);
 		res.json({
 			button: {
-				code: json.button.code
+				code: code
 			}
 		});
 	});
@@ -134,6 +146,73 @@ exports.createButton = function(req, res) {
 };
 
 exports.buttonCallback = function (req, res) {
-	console.log(req);
-	res.json({ok: true});
+	console.log('got callback');
+	var order = req.body.order;
+	if (!order) {
+		console.error("Not an order callback");
+		res.json({error: "Not an order"});
+		return;
+	}
+	var id = order.custom;
+	if (!id) {
+		console.error("Missing Custom ID");
+		res.json({error: "Missing custom ID"});
+		return;
+	}
+	if (order.status != "completed") {
+		console.error("Order not complete");
+		res.json({error: "Order not complete"});
+		return;
+	}
+	console.log("Got callback for order id", id);
+	var s = id.split("_");
+	var university = s[0],
+		studentId = s[1],
+		fund = s[2],
+		fundName = s[3],
+		hash = s[4];
+	if (hash != hmac(id.substr(0, id.lastIndexOf("_")), config.secret)) {
+		console.error("Invalid HMAC");
+		res.json({error: "Invalid hash"});
+		return;
+	}
+
+	fulfillOrder(university, studentId, fund, fundName);
+
+	res.json({error: false});
 };
+
+function fulfillOrder(university, studentId, fund, fundName) {
+	lookupAccount(university, studentId, function (details) {
+		if (details.error || !details.email) {
+			console.error("Error looking up account for fulfiling order",
+				details.error, university, studentId, fund);
+			return;
+		}
+
+		sequoiaDeposit(university, studentId, fund, function (error) {
+			if (error) {
+				console.error("Error depositing to sequoia.",
+					error, university, studentId, fund);
+				return;
+			}
+
+			sendEmail(details.email, "Deposit complete",
+				"Your funds have been deposited to your " + fundName +
+				" account");
+		});
+	});
+}
+
+function sequoiaDeposit(university, studentId, fund, cb) {
+	/*jshint unused: false */
+	console.log("Deposit to", university, studentId, fund);
+	cb({error: "Not yet implemented"});
+}
+
+function sendEmail(to, subject, body) {
+	/*jshint unused: false */
+	console.log("echo \"" + body + "\" | " +
+		"mail -s \"" + subject + "\" \"" + to + "\"");
+}
+

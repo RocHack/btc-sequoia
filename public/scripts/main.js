@@ -47,7 +47,7 @@ function onLookupFormSubmit(e) {
 	showHide(lookupFailEl, false);
 	lookupStudentId(studentId, university, function (error, name, email) {
 		showHide(lookupLoader, false);
-		if (error) {
+		if (error || !name) {
 			showHide(lookupFailEl, true);
 			lookupFailText.innerText = error;
 		} else {
