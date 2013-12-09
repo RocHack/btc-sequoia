@@ -1,16 +1,22 @@
 var request = require("request");
-var crypto = require('crypto');
+var crypto = require("crypto");
+var qs = require("querystring");
 var config = require("../config.json");
 var coinbase = require("coinbase-api")(config.api_key);
 
+var card = config.card;
 var baseUrl = config.base_url;
 var apiBase = baseUrl + "api/";
 
 var ecardHost = "https://ecard.sequoiars.com/";
-var base = ecardHost + "eCardServices/eCardServices.svc/WebHttp/";
+var ecardServices = ecardHost + "eCardServices/";
+var base = ecardServices + "eCardServices.svc/WebHttp/";
 var requestNameUrl = base + "VerifyAccountHolder";
 var requestEmailUrl = base + "RequestCardholderEmail";
 var depositPage = "/eCardCardholder/AnonDepositPage.aspx";
+var depositUrl = "https://pg2.sequoiars.com/PaymentWebServer/PageRequest.aspx";
+var confirmUrl = ecardServices + "eCardSecureServices.asmx/DepositConfirmation";
+var depositResponsePage = "/eCardCardholder/AnonDepositResponsePage.aspx";
 
 var universityIDPrefixes = {
 	rochester: 9
@@ -110,10 +116,10 @@ exports.createButton = function(req, res) {
 	var fund = req.query.fund;
 	var fundName = req.query.fund_name;
 	var fullName = req.query.full_name;
-	var studentId = req.query.student_id;
+	var campusId = req.query.campus_id;
 	var university = req.query.university;
 	var description = fundName + " for " + fullName;
-	var id = university + "_" + studentId + "_" + fund + "_" + fundName;
+	var id = [university, campusId, fund, fundName, amount].join("_");
 	id = id + "_" + hmac(id, config.secret);
 
 	coinbase.buttons({
@@ -167,22 +173,23 @@ exports.buttonCallback = function (req, res) {
 	console.log("Got callback for order id", id);
 	var s = id.split("_");
 	var university = s[0],
-		studentId = s[1],
+		campusId = s[1],
 		fund = s[2],
 		fundName = s[3],
-		hash = s[4];
+		amount = s[4],
+		hash = s[5];
 	if (hash != hmac(id.substr(0, id.lastIndexOf("_")), config.secret)) {
 		console.error("Invalid HMAC");
 		res.json({error: "Invalid hash"});
 		return;
 	}
 
-	fulfillOrder(university, studentId, fund, fundName);
+	fulfillOrder(university, campusId, fund, fundName, amount);
 
 	res.json({error: false});
 };
 
-function fulfillOrder(university, studentId, fund, fundName) {
+function fulfillOrder(university, studentId, fund, fundName, amount) {
 	lookupAccount(university, studentId, function (details) {
 		if (details.error || !details.email) {
 			console.error("Error looking up account for fulfiling order",
@@ -190,7 +197,8 @@ function fulfillOrder(university, studentId, fund, fundName) {
 			return;
 		}
 
-		sequoiaDeposit(university, studentId, fund, function (error) {
+		var campusId = details.campusId;
+		sequoiaDeposit(university, campusId, fund, amount, function (error) {
 			if (error) {
 				console.error("Error depositing to sequoia.",
 					error, university, studentId, fund);
@@ -204,14 +212,63 @@ function fulfillOrder(university, studentId, fund, fundName) {
 	});
 }
 
-function sequoiaDeposit(university, studentId, fund, cb) {
-	/*jshint unused: false */
-	console.log("Deposit to", university, studentId, fund);
-	cb({error: "Not yet implemented"});
+function sequoiaDeposit(university, campusId, fund, amount, cb) {
+	console.log("Deposit to", university, campusId, fund);
+	var form = {
+		DestinationURL: ecardHost + university + depositResponsePage,
+		TenderNum: fund,
+		StoreNum: 1034,
+		OrderID: 103474317,
+		ConfirmationId: 74317,
+		TransactionType: "deposit",
+		CardType: "credit",
+		Account: card.num,
+		CVV2: card.cvv2,
+		Amount: Math.round(amount * 1000),
+		TargetID: campusId,
+		ExpDate: card.exp,
+		CustomerName: card.name,
+		AddressStreet: card.address,
+		AddressCity: card.city,
+		AddressState: card.state,
+		AddressZip: card.zip,
+		AddressCountry: card.country,
+		CreditCardType: card.type,
+		Fee: 0,
+		DepositRecipientLast4Digits: "",
+		ConfirmationURL: confirmUrl
+	};
+	request.post({
+		uri: depositUrl,
+		body: form
+	}, function (err, res, body) {
+		if (err) {
+			console.error("Deposit failed.", err, campusId, fund, amount);
+			return;
+		}
+		var redirect = res.headers && res.headers.Location;
+		if (!redirect) {
+			console.error("Deposit redirect failed.", campusId, amount, body);
+			return;
+		}
+		var result = qs.parse(redirect);
+		if (result.res == "failure") {
+			err = result.resText;
+			console.error("Deposit failed.", err);
+			cb(err);
+		} else if (result.res != "success") {
+			err = result.resText;
+			console.error("Unknown deposit result", err);
+			cb(err);
+		} else {
+			// success
+			cb(false);
+		}
+	});
 }
 
 function sendEmail(to, subject, body) {
-	/*jshint unused: false */
+	// todo
 	console.log("echo \"" + body + "\" | " +
 		"mail -s \"" + subject + "\" \"" + to + "\"");
 }

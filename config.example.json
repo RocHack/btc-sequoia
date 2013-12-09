@@ -1,5 +1,17 @@
 {
   "api_key": "0000000000000000000000000000000000000000000000000000000000000000",
   "secret": "00000000000000000000000000000000",
-  "base_url": "https://example.org/btc-sequoia/"
+  "base_url": "https://example.org/btc-sequoia/",
+  "card": {
+    "type": "Visa",
+    "num": "0000000000000000",
+    "cvv2": "000",
+    "exp": "0113",
+    "name": "Name",
+    "address": "Address",
+    "city": "City",
+    "state": "NY",
+    "zip": "00000",
+    "country": "US"
+  }
 }

@@ -157,4 +157,7 @@ function init() {
 	amountChoiceForm.addEventListener("submit", onAmountChoiceSubmit, false);
 
 	checkoutLoader = $("checkout-loader");
+
+	onUnivSelectChange.call(univSelect);
+	studentIdInput.focus();
 }
